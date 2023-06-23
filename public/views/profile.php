@@ -1,0 +1,47 @@
+<?php require_once VIEW_ROOT . '/includes/sidebar.php'; ?>
+
+<div class="posts">
+  <div class="heading">
+    <h2 id="heading"><?=escape($profile_data->user_username)?>'s Posts</h2>
+  </div>
+
+  <?php if(!$posts): ?>
+    <h3 class="message"><?=escape($profile_data->user_username)?> hasn't made a post yet.</h3>
+  <?php else: ?>
+    <?php foreach($posts as $post): ?>
+      <div class="post">
+        <span class="vote">
+          <?php $points = $this->model->getPoints($post->post_id); ?>
+
+          <?php if($user): ?>
+            <?php if(!findValue($points, 'point_user', $user->user_id)): ?>
+              <a href="/vote/<?=$post->post_id?>"><img src="/Resource/public/img/vote.svg" alt="Vote"></a>
+            <?php else: ?>
+              <a href="/unvote/<?=$post->post_id?>"><img src="/Resource/public/img/unvote.svg" alt="Vote"></a>
+            <?php endif; ?>
+          <?php else: ?>
+            <img src="/Resource/public/img/vote.svg" alt="Vote">
+          <?php endif; ?>
+          
+          <h4><?=count($points)?></h4>
+        </span>
+
+        <h3>
+          <?php if(isset($post->post_url)): ?>
+            <a href="<?=$post->post_url?>"><?=escape($post->post_title)?></a>
+          <?php else: ?>
+            <a href="/post/<?=escape($post->post_id)?>"><?=escape($post->post_title)?></a>
+          <?php endif; ?>
+        </h3>
+
+        <h5>in <a href="/category/<?=escape($post->category_id)?>"><?=escape($post->category_name)?></a> on <?=escape(date('l j F Y H:i', strtotime($post->post_date)))?><h5>
+          
+        <h6><a href="/post/<?=escape($post->post_id)?>#comments">Comments</a></h6>
+
+        <?php if($user && $post->post_by === $user->user_id): ?>
+          <h6><a href="/edit/<?=$post->post_id?>">Edit</a></h6>
+        <?php endif; ?>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+</div>

@@ -1,0 +1,6 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /aggregator
+  RewriteRule ^$ /aggregator/index [redirect]
+  RewriteRule ^([a-zA-Z-]+)/?([a-zA-Z0-9-/]*)$ /aggregator/index.php?page=$1&query=$2 [QSA,L]
+</IfModule>

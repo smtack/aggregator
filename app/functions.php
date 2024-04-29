@@ -66,6 +66,16 @@ function flash($name = '', $message = '', $class = 'flash') {
   }
 }
 
+// Return BASE_URL + optional location
+
+function base_url($location = null) {
+  if(!$location) {
+    return BASE_URL;
+  } else {
+    return BASE_URL . $location;
+  }
+}
+
 // Create random bytes
 
 function random($num) {

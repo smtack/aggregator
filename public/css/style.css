@@ -291,6 +291,14 @@ a {
   line-height: 1.5;
 }
 
+.pagination {
+  padding: 25px;
+}
+
+#prev {
+  padding-right: 10px;
+}
+
 .heading {
   padding: 25px 25px 0 25px;
   border-bottom: 1px solid #d3d3d3;

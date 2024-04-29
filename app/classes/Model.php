@@ -158,8 +158,9 @@ class Model {
     return false;
   }
 
-  public function getCategories() {
+  public function getCategories($start, $limit) {
     $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
               *
             FROM
               categories
@@ -169,7 +170,9 @@ class Model {
               users.user_id = categories.category_by
             ORDER BY
               category_created
-            DESC";
+            DESC
+            LIMIT
+              {$start}, {$limit}";
     
     $stmt = $this->db->pdo->prepare($sql);
 
@@ -275,8 +278,9 @@ class Model {
     return false;
   }
 
-  public function getPosts() {
+  public function getPosts($start, $limit) {
     $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
               *
             FROM
               posts
@@ -290,7 +294,9 @@ class Model {
               category_id = posts.post_category
             ORDER BY
               post_date
-            DESC";
+            DESC
+            LIMIT
+              {$start}, {$limit}";
 
     $stmt = $this->db->pdo->prepare($sql);
 
@@ -301,8 +307,9 @@ class Model {
     return false;
   }
 
-  public function getHomepagePosts($user) {
+  public function getHomepagePosts($user, $start, $limit) {
     $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
               *
             FROM
               posts
@@ -325,7 +332,9 @@ class Model {
                 follow_user = :user)
             ORDER BY
               post_date
-            DESC";
+            DESC
+            LIMIT
+              {$start}, {$limit}";
 
     $stmt = $this->db->pdo->prepare($sql);
 
@@ -336,8 +345,9 @@ class Model {
     return false;
   }
 
-  public function getPostsByCategory($id) {
+  public function getPostsByCategory($id, $start, $limit) {
     $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
               *
             FROM
               posts
@@ -349,7 +359,9 @@ class Model {
               post_category = :category_id
             ORDER BY
               post_date
-            DESC";
+            DESC
+            LIMIT
+              {$start}, {$limit}";
 
     $stmt = $this->db->pdo->prepare($sql);
 
@@ -360,8 +372,9 @@ class Model {
     return false;
   }
 
-  public function getUsersPosts($user) {
+  public function getUsersPosts($user, $start, $limit) {
     $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
               *
             FROM
               posts
@@ -377,7 +390,9 @@ class Model {
               post_by = :post_by
             ORDER BY
               post_date
-            DESC";
+            DESC
+            LIMIT
+              {$start}, {$limit}";
 
     $stmt = $this->db->pdo->prepare($sql);
 

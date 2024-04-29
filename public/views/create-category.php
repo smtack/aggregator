@@ -4,7 +4,7 @@
   <div class="form">
     <h2>Create Category</h2>
 
-    <form action="/new-category" method="POST">
+    <form action="<?= base_url('new-category') ?>" method="POST">
       <div class="form-group">
         <?php error('form_error'); ?>
       </div>
@@ -15,7 +15,7 @@
         <textarea name="category_description" placeholder="Category Description"></textarea>
       </div>
       <div class="form-group">
-        <input type="hidden" name="token" value="<?=generate('token')?>">
+        <input type="hidden" name="token" value="<?= generate('token') ?>">
         <input type="submit" name="create_category" value="Create Category">
       </div>
     </form>

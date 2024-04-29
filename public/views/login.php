@@ -1,11 +1,11 @@
 <div class="header">
-  <h1><a href="/index">aggregator</a></h1>
+  <h1><a href="<?= base_url() ?>">aggregator</a></h1>
 </div>
 
 <div class="form">
   <h2>Log In</h2>
   
-  <form action="/authenticate" method="POST">
+  <form action="<?= base_url('authenticate') ?>" method="POST">
     <div class="form-group">
       <?php error('form_error'); ?>
     </div>
@@ -16,15 +16,15 @@
       <input type="password" name="user_password" placeholder="Password">
     </div>
     <div class="form-group">
-      <input type="hidden" name="token" value="<?=generate('token')?>">
+      <input type="hidden" name="token" value="<?= generate('token') ?>">
       <input type="submit" name="login" value="Log In">
     </div>
     <div class="form-group">
-      <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+      <p>Don't have an account? <a href="<?= base_url('signup') ?>">Sign Up</a></p>
     </div>
   </form>
 </div>
 
 <div class="page-footer">
-  <p>&copy; <?=date('Y')?> aggregator</p>
+  <p>&copy; <?= date('Y') ?> aggregator</p>
 </div>

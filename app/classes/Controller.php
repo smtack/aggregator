@@ -39,7 +39,7 @@ class Controller {
 
         exit();
       default:
-        header('Location: /' . $location);
+        header('Location: ' . BASE_URL . $location);
 
         exit();
       break;
@@ -51,7 +51,7 @@ class Controller {
       extract($data);
     }
 
-    require_once 'public/views/' . $view . '.php';
+    require_once '../public/views/' . $view . '.php';
   }
 
   private function loadPage($view, $data = null) {
@@ -63,15 +63,25 @@ class Controller {
   }
 
   private function index() {
+    $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+
+    $limit = 25;
+
+    $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
     if($user = $this->model->checkUser()) {
-      $posts = $this->model->getHomepagePosts($user->user_id);
+      $posts = $this->model->getHomepagePosts($user->user_id, $start, $limit);
     } else {
-      $posts = $this->model->getPosts();
+      $posts = $this->model->getPosts($start, $limit);
     }
+
+    $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+    $pages = ceil($total / $limit);
 
     $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
 
-    $this->loadPage('index', array('user' => $user, 'posts' => $posts, 'categories' => $categories));
+    $this->loadPage('index', array('user' => $user, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'categories' => $categories));
   }
 
   private function signup() {
@@ -283,19 +293,29 @@ class Controller {
 
   private function profile() {
     $user = $this->model->checkUser();
-
+    
     if(!$profile = $_GET['query']) {
       $this->redirect('index');
     } else if(!$profile_data = $this->model->getProfile($profile)) {
       $this->redirect(404);
     } else {
+      $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+
+      $limit = 25;
+
+      $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
+      $posts = $this->model->getUsersPosts($profile_data->user_id, $start, $limit);
+
+      $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+      $pages = ceil($total / $limit);
+
       $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
       
-      $posts = $this->model->getUsersPosts($profile_data->user_id);
-  
       $page_title = $profile_data->user_username . "'s Profile";
 
-      $this->loadPage('profile', array('user' => $user, 'profile_data' => $profile_data, 'categories' => $categories, 'posts' => $posts, 'page_title' => $page_title));
+      $this->loadPage('profile', array('user' => $user, 'profile_data' => $profile_data, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'page_title' => $page_title));
     }
   }
 
@@ -367,26 +387,46 @@ class Controller {
     } else {
       $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
 
-      $posts = $this->model->getPostsByCategory($category);
+      $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+
+      $limit = 25;
+
+      $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
+      $posts = $this->model->getPostsByCategory($category, $start, $limit);
+
+      $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+      $pages = ceil($total / $limit);
 
       $follow_data = $this->model->getFollowData($category_data->category_id);
 
       $page_title = $category_data->category_name;
 
-      $this->loadPage('category', array('user' => $user, 'category_data' => $category_data, 'categories' => $categories, 'posts' => $posts, 'follow_data' => $follow_data, 'page_title' => $page_title));
+      $this->loadPage('category', array('user' => $user, 'category_data' => $category_data, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'follow_data' => $follow_data, 'page_title' => $page_title));
     }
   }
 
   private function categories() {
     $user = $this->model->checkUser();
 
-    $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
+    $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
 
-    $categories_list = $this->model->getCategories();
+    $limit = 5;
+
+    $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
+    $categories_list = $this->model->getCategories($start, $limit);
+
+    $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+    $pages = ceil($total / $limit);
+
+    $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
 
     $page_title = "All Categories";
 
-    $this->loadPage('categories', array('user' => $user, 'categories' => $categories, 'categories_list' => $categories_list, 'page_title' => $page_title));
+    $this->loadPage('categories', array('user' => $user, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'categories_list' => $categories_list, 'page_title' => $page_title));
   }
 
   private function follow() {
@@ -684,10 +724,20 @@ class Controller {
 
     $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
 
-    $posts = $this->model->getPosts();
+    $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+
+    $limit = 25;
+
+    $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
+    $posts = $this->model->getPosts($start, $limit);
+
+    $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+    $pages = ceil($total / $limit);
 
     $page_title = "All Posts";
 
-    $this->loadPage('all', array('user' => $user, 'categories' => $categories, 'posts' => $posts, 'page_title' => $page_title));
+    $this->loadPage('all', array('user' => $user, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'page_title' => $page_title));
   }
 }

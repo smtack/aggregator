@@ -1,6 +1,6 @@
 <IfModule mod_rewrite.c>
+  Options -MultiViews
   RewriteEngine On
-  RewriteRule ^/?Resource/(.*)$ /$1 [L]
-  RewriteRule ^$ /index [redirect]
-  RewriteRule ^([a-zA-Z-]+)/?([a-zA-Z0-9-/]*)$ /index.php?page=$1&query=$2 [L]
+  RewriteRule ^$ public/ [L]
+  RewriteRule (.*)$ public/$1 [L]
 </IfModule>

@@ -5,4 +5,5 @@ define('DB_USER', '');
 define('DB_PASSWORD', '');
 define('DB_CHARSET', '');
 
-define('VIEW_ROOT', 'public/views');
+define('BASE_URL', '');
+define('VIEW_ROOT', '../public/views');

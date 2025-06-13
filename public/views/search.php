@@ -17,19 +17,17 @@
       <?php foreach($post_results as $post_result): ?>
         <div class="post">
           <span class="vote">
-            <?php $points = $this->model->getPoints($post_result->post_id); ?>
-
             <?php if($user): ?>
-              <?php if(!findValue($points, 'point_user', $user->user_id)): ?>
-                <a href="<?= base_url('vote') ?>/<?= $post_result->post_id ?>"><img src="<?= base_url('public/img/vote.svg') ?>" alt="Vote"></a>
+              <?php if(!$this->model->hasVoted($user->user_id, $post_result->post_id)): ?>
+                <a href="<?= base_url('vote') ?>/<?= $post_result->post_id ?>"><img src="/Resource/img/vote.svg" alt="Vote"></a>
               <?php else: ?>
-                <a href="<? base_url('unvote') ?>/<?= $post_result->post_id ?>"><img src="<?= base_url('public/img/unvote.svg') ?>" alt="Unvote"></a>
+                <a href="<?= base_url('unvote') ?>/<?= $post_result->post_id ?>"><img src="/Resource/img/unvote.svg" alt="Unvote"></a>
               <?php endif; ?>
             <?php else: ?>
-              <img src="<?= base_url('public/img/vote.svg') ?>" alt="Vote">
+              <img src="/Resource/img/vote.svg" alt="Vote">
             <?php endif; ?>
             
-            <h4><?= count($points) ?></h4>
+            <h4><?= $post_result->pts ?></h4>
           </span>
 
           <h3>

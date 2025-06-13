@@ -8,7 +8,7 @@
 
     <form action="<?= base_url('update-profile') ?>" method="POST">
       <div class="form-group">
-        <?php error('form_error'); ?>
+        <?php flash('form_error'); ?>
       </div>
       <div class="form-group">
         <input type="text" name="user_username" value="<?= escape($user->user_username) ?>" disabled>
@@ -28,7 +28,7 @@
 
     <form action="<?= base_url('update-password') ?>" method="POST">
       <div class="form-group">
-        <?php error('password_error'); ?>
+        <?php flash('password_error'); ?>
       </div>
       <div class="form-group">
         <input type="password" name="confirm_password" placeholder="Confirm Password">
@@ -51,7 +51,7 @@
 
     <form action="<?= base_url('delete-profile') ?>" method="POST">
       <div class="form-group">
-        <?php error('delete_error'); ?>
+        <?php flash('delete_error'); ?>
       </div>
       <div class="form-group">
         <input type="password" name="user_password" placeholder="Enter Password">

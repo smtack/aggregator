@@ -31,96 +31,118 @@ class Database {
   }
 
   public function insert($table, $array) {
-    $sql = "INSERT INTO " . $table . " (";
-    $pref = "";
+    $columns = [];
+    $placeholders = [];
+    $values = [];
 
     foreach($array as $key => $value) {
-      $sql .= $pref . $key;
-      $pref = ", ";
+      $columns[] = $key;
+      $placeholders[] = ':' . $key;
+      $values[':' . $key] = $value;
     }
 
-    $sql .= ") VALUES (";
-    $pref = "";
+    $sql = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
 
-    foreach($array as $key => $value) {
-      $sql .= $pref . "'" . $value . "'";
-      $pref = ", ";
+    try {
+      $stmt = $this->pdo->prepare($sql);
+
+      $stmt->execute($values);
+
+      return $stmt;
+    } catch(\PDOException $e) {
+      error_log("Error: " . $e->getMessage() . "Code: " . $e->getCode());
+      throw new Exception("An error occurred");
     }
-
-    $sql .= ");";
-
-    $stmt = $this->pdo->prepare($sql);
-
-    $stmt->execute();
-
-    return $stmt;
   }
 
   public function select($table, $array) {
-    $sql = "SELECT * FROM " . $table;
-    $pref = " WHERE ";
+    $columns = [];
+    $placeholders = [];
+    $values = [];
 
     foreach($array as $key => $value) {
-      $sql .= $pref . $key . "='" . $value . "'";
-      $pref = " AND ";
+      $columns[] = $key;
+      $placeholders[] = ':' . $key;
+      $values[':' . $key] = $value;
     }
 
-    $sql .= ";";
+    $sql = "SELECT * FROM " . $table . " WHERE " . implode(' AND ', array_map(fn($col, $pl) => "$col = $pl", $columns, $placeholders)) . ";";
 
-    $stmt = $this->pdo->prepare($sql);
+    try {
+      $stmt = $this->pdo->prepare($sql);
 
-    $stmt->execute();
+      $stmt->execute($values);
 
-    return $stmt;
+      return $stmt;
+    } catch(\PDOException $e) {
+      error_log("Error: " . $e->getMessage() . "Code: " . $e->getCode());
+      throw new Exception("An error occurred");
+    }
   }
 
   public function update($table, $array, $field) {
-    $sql = "UPDATE " . $table . " SET ";
-    $pref = "";
+    $columns = [];
+    $placeholders = [];
+    $values = [];
 
     foreach($array as $key => $value) {
-      $sql .= $pref . $key . "='" . $value . "'";
-      $pref = ", ";
+      $columns[] = $key;
+      $placeholders[] = ':' . $key;
+      $values[':' . $key] = $value;
     }
 
-    $sql .= " WHERE ";
-    $pref = "";
+    $fieldColumns = [];
+    $fieldPlaceholders = [];
+    $fieldValues = [];
 
     foreach($field as $key => $value) {
-      $sql .= $pref . $key . "='" . $value . "'";
-      $pref = " AND ";
+      $fieldColumns[] = $key;
+      $fieldPlaceholders[] = ':' . $key;
+      $fieldValues[':' . $key] = $value;
     }
 
-    $sql .= ";";
+    $sql = "UPDATE " . $table . " SET " . implode(', ', array_map(fn($col, $pl) => "$col = $pl", $columns, $placeholders)) . " WHERE " . implode(' AND ', array_map(fn($fcol, $fpl) => "$fcol = $fpl", $fieldColumns, $fieldPlaceholders)) . ";";
 
-    $stmt = $this->pdo->prepare($sql);
+    try {
+      $stmt = $this->pdo->prepare($sql);
 
-    $stmt->execute();
+      $stmt->execute(array_merge($values, $fieldValues));
 
-    return $stmt;
+      return $stmt;
+    } catch(\PDOException $e) {
+      error_log("Error: " . $e->getMessage() . "Code: " . $e->getCode());
+      throw new Exception("An error occurred");
+    }
   }
 
   public function delete($table, $array) {
-    $sql = "DELETE FROM " . $table;
-    $pref = " WHERE ";
+    $columns = [];
+    $placeholders = [];
+    $values = [];
 
     foreach($array as $key => $value) {
-      $sql .= $pref . $key . "='" . $value . "'";
-      $pref = " AND ";
+      $columns[] = $key;
+      $placeholders[] = ':' . $key;
+      $values[':' . $key] = $value;
     }
 
-    $sql .= ";";
+    $sql = "DELETE FROM " . $table . " WHERE " . implode(' AND ', array_map(fn($col, $pl) => "$col = $pl", $columns, $placeholders)) . ";";
 
-    $stmt = $this->pdo->prepare($sql);
+    try {
+      $stmt = $this->pdo->prepare($sql);
 
-    $stmt->execute();
+      $stmt->execute($values);
 
-    return $stmt;
+      return $stmt;
+    } catch(\PDOException $e) {
+      error_log("Error: " . $e->getMessage() . "Code: " . $e->getCode());
+      throw new Exception("An error occurred");
+    }
   }
 
   public function exists($table, $array) {
     $res = $this->select($table, $array);
 
-    return ($res->rowCount() > 0) ? true : false;
+    return $res->rowCount() > 0;
   }
 }

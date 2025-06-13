@@ -72,7 +72,7 @@ class Controller {
     if($user = $this->model->checkUser()) {
       $posts = $this->model->getHomepagePosts($user->user_id, $start, $limit);
     } else {
-      $posts = $this->model->getPosts($start, $limit);
+      $posts = $this->model->getTopPosts($start, $limit);
     }
 
     $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
@@ -98,27 +98,27 @@ class Controller {
     if($user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('signup');
     } else if(empty($_POST['user_username']) || empty($_POST['user_email']) || empty($_POST['user_password']) || empty($_POST['confirm_password'])) {
-      error('form_error', 'Fill in all fields');
+      flash('form_error', 'Fill in all fields', 'error');
 
       $this->redirect('signup');
     } else if($this->model->db->exists('users', array('user_username' => $_POST['user_username']))) {
-      error('form_error', 'This username is taken');
+      flash('form_error', 'This username is taken', 'error');
 
       $this->redirect('signup');
     } else if($this->model->db->exists('users', array('user_email' => $_POST['user_email']))) {
-      error('form_error', 'This email address is already in use');
+      flash('form_error', 'This email address is already in use', 'error');
 
       $this->redirect('signup');
     } else if(!filter_var($_POST['user_email'], FILTER_VALIDATE_EMAIL)) {
-      error('form_error', 'Enter a valid email address');
+      flash('form_error', 'Enter a valid email address', 'error');
 
       $this->redirect('signup');
     } else if($_POST['user_password'] !== $_POST['confirm_password']) {
-      error('form_error', 'Passwords must match');
+      flash('form_error', 'Passwords must match', 'error');
 
       $this->redirect('signup');
     } else {
@@ -129,11 +129,11 @@ class Controller {
       ];
 
       if($this->model->createUser($signup)) {
-        flash('user_message', 'Welcome to aggregator, ' . $signup['user_username']);
+        flash('user_message', 'Welcome to aggregator, ' . $signup['user_username'], 'flash');
 
         $this->redirect('index');
       } else {
-        error('form_error', 'Unable to sign up. Try again later.');
+        flash('form_error', 'Unable to sign up. Try again later.', 'error');
 
         $this->redirect('signup');
       }
@@ -154,11 +154,11 @@ class Controller {
     if($user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('login');
     } else if(empty($_POST['user_username']) || empty($_POST['user_password'])) {
-      error('form_error', 'Enter your Username and Password');
+      flash('form_error', 'Enter your Username and Password', 'error');
 
       $this->redirect('login');
     } else {
@@ -168,11 +168,11 @@ class Controller {
       ];
 
       if($this->model->login($login)) {
-        flash('user_message', 'Welcome back, ' . $login['user_username']);
+        flash('user_message', 'Welcome back, ' . $login['user_username'], 'flash');
 
         $this->redirect('index');
       } else {
-        error('form_error', 'Username or Password Incorrect');
+        flash('form_error', 'Username or Password Incorrect', 'error');
 
         $this->redirect('login');
       }
@@ -201,30 +201,30 @@ class Controller {
     if(!$user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('update');
     } else if(empty($_POST['user_email'])) {
-      error('form_error', 'Enter a new email address');
+      flash('form_error', 'Enter a new email address', 'error');
 
       $this->redirect('update');
     } else if($this->model->db->exists('users', array('user_email' => $_POST['user_email'])) && $_POST['user_email'] !== $user->user_email) {
-      error('form_error', 'This email address is already in use');
+      flash('form_error', 'This email address is already in use', 'error');
 
       $this->redirect('update');
     } else if(!filter_var($_POST['user_email'], FILTER_VALIDATE_EMAIL)) {
-      error('form_error', 'Enter a valid email address');
+      flash('form_error', 'Enter a valid email address', 'error');
 
       $this->redirect('update');
     } else {
       $update = ['user_email' => escape($_POST['user_email'])];
 
       if($this->model->updateProfile($update, $user->user_id)) {
-        flash('user_message', 'Profile Updated');
+        flash('user_message', 'Profile Updated', 'flash');
 
         $this->redirect('update');
       } else {
-        error('form_error', 'Unable to update profile');
+        flash('form_error', 'Unable to update profile', 'error');
 
         $this->redirect('update');
       }
@@ -235,30 +235,30 @@ class Controller {
     if(!$user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['password-token'], 'password-token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('update');
     } else if(empty($_POST['confirm_password']) || empty($_POST['new_password']) || empty($_POST['confirm_new_password'])) {
-      error('password_error', 'Fill in all fields');
+      flash('password_error', 'Fill in all fields', 'error');
 
       $this->redirect('update');
     } else if(!password_verify($_POST['confirm_password'], $user->user_password)) {
-      error('password_error', 'Enter current password correctly');
+      flash('password_error', 'Enter current password correctly', 'error');
 
       $this->redirect('update');
     } else if($_POST['new_password'] !== $_POST['confirm_new_password']) {
-      error('password_error', 'Passwords must match');
+      flash('password_error', 'Passwords must match', 'error');
 
       $this->redirect('update');
     } else {
       $password = ['user_password' => password_hash($_POST['new_password'], PASSWORD_BCRYPT)];
     
       if($this->model->changePassword($password, $user->user_id)) {
-        flash('user_message', 'Password Updated');
+        flash('user_message', 'Password Updated', 'flash');
 
         $this->redirect('update');
       } else {
-        error('password_error', 'Unable to change password');
+        flash('password_error', 'Unable to change password', 'error');
 
         $this->redirect('update');
       }
@@ -269,22 +269,22 @@ class Controller {
     if(!$user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['delete-token'], 'delete-token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('update');
     } else if(empty($_POST['user_password'])) {
-      error('delete_error', 'Enter your password');
+      flash('delete_error', 'Enter your password', 'error');
 
       $this->redirect('update');
     } else if(!password_verify($_POST['user_password'], $user->user_password)) {
-      error('delete_error', 'Enter your password correctly');
+      flash('delete_error', 'Enter your password correctly', 'error');
 
       $this->redirect('update');
     } else {
-      if($this->model->deleteProfile($user->user_id)) {
+      if($this->model->deleteProfile($user->user_id)) {        
         $this->logout();
       } else {
-        error('delete_error', 'Unable to delete profile');
+        flash('delete_error', 'Unable to delete profile', 'error');
 
         $this->redirect('update');
       }
@@ -351,11 +351,11 @@ class Controller {
     if(!$user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('create-category');
     } else if(empty($_POST['category_name'])) {
-      error('form_error', 'Enter a category name');
+      flash('form_error', 'Enter a category name', 'error');
 
       $this->redirect('create-category');
     } else {
@@ -364,13 +364,17 @@ class Controller {
         'category_description' => escape($_POST['category_description']),
         'category_by' => $user->user_id
       ];
-  
-      if($this->model->createCategory($category)) {
-        flash('post_message', 'Category created');
 
-        $this->redirect('index');
+      $category_id = $this->model->createCategory($category);
+  
+      if($category_id) {
+        $this->model->followCategory($user->user_id, $category_id);
+        
+        flash('post_message', 'Category created', 'flash');
+
+        $this->redirect('category/' . $category_id);
       } else {
-        error('form_error', 'Unable to create category');
+        flash('form_error', 'Unable to create category', 'error');
 
         $this->redirect('create-category');
       }
@@ -473,49 +477,33 @@ class Controller {
     if(!$user = $this->model->checkUser()) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('new-post');
     } else if(empty($_POST['post_category']) || empty($_POST['post_title'])) {
-      error('form_error', 'Fill in all fields');
+      flash('form_error', 'Fill in all fields', 'error');
 
       $this->redirect('new-post');
     } else {
+      $post = [
+        'post_title' => escape($_POST['post_title']),
+        'post_text' => escape($_POST['post_text']),
+        'post_category' => escape($_POST['post_category']),
+        'post_by' => $user->user_id
+      ];
+
       if(!empty($_POST['post_url'])) {
-        $post = [
-          'post_title' => escape($_POST['post_title']),
-          'post_url' => escape($_POST['post_url']),
-          'post_text' => escape($_POST['post_text']),
-          'post_category' => escape($_POST['post_category']),
-          'post_by' => $user->user_id
-        ];
+        $post['post_url'] = escape($_POST['post_url']);
+      }
   
-        if($this->model->createPost($post)) {
-          flash('post_message', 'Post created');
+      if($this->model->createPost($post)) {
+        flash('post_message', 'Post created', 'flash');
   
-          $this->redirect('index');
-        } else {
-          error('form_error', 'Unable to create post');
-  
-          $this->redirect('new-post');
-        }
+        $this->redirect('index');
       } else {
-        $post = [
-          'post_title' => escape($_POST['post_title']),
-          'post_text' => escape($_POST['post_text']),
-          'post_category' => escape($_POST['post_category']),
-          'post_by' => $user->user_id
-        ];
+        flash('form_error', 'Unable to create post', 'error');
   
-        if($this->model->createPost($post)) {
-          flash('post_message', 'Post created');
-  
-          $this->redirect('index');
-        } else {
-          error('form_error', 'Unable to create post');
-  
-          $this->redirect('new-post');
-        }
+        $this->redirect('new-post');
       }
     }
   }
@@ -568,45 +556,31 @@ class Controller {
     } else if($post_data->post_by !== $user->user_id) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('edit/' . $post_data->post_id);
     } else if(empty($_POST['post_title'])) {
-      error('form_error', 'Enter a title');
+      flash('form_error', 'Enter a title', 'error');
 
       $this->redirect('edit/' . $post_data->post_id);
     } else {
+      $update = [
+        'post_title' => escape($_POST['post_title']),
+        'post_text' => escape($_POST['post_text'])
+      ];
+
       if(!empty($_POST['post_url'])) {
-        $update = [
-          'post_title' => escape($_POST['post_title']),
-          'post_url' => escape($_POST['post_url']),
-          'post_text' => escape($_POST['post_text'])
-        ];
+        $update['post_url'] = escape($_POST['post_url']);
+      }
   
-        if($this->model->editPost($update, $post_data->post_id)) {
-          flash('post_message', 'Post Updated');
+      if($this->model->editPost($update, $post_data->post_id)) {
+        flash('post_message', 'Post Updated', 'flash');
   
-          $this->redirect('edit/' . $post_data->post_id);
-        } else {
-          error('form_error', 'Unable to edit post');
-  
-          $this->redirect('edit/' . $post_data->post_id);
-        }
+        $this->redirect('post/' . $post_data->post_id);
       } else {
-        $update = [
-          'post_title' => escape($_POST['post_title']),
-          'post_text' => escape($_POST['post_text'])
-        ];
+        flash('form_error', 'Unable to edit post', 'error');
   
-        if($this->model->editPost($update, $post_data->post_id)) {
-          flash('post_message', 'Post Updated');
-  
-          $this->redirect('edit/' . $post_data->post_id);
-        } else {
-          error('form_error', 'Unable to edit post');
-  
-          $this->redirect('edit/' . $post_data->post_id);
-        }
+        $this->redirect('edit/' . $post_data->post_id);
       }
     }
   }
@@ -621,16 +595,16 @@ class Controller {
     } else if($post_data->post_by !== $user->user_id) {
       $this->redirect('index');
     } else if(!check($_POST['delete-token'], 'delete-token')) {
-      error('delete_error', 'Token Failure');
+      flash('delete_error', 'Token Failure', 'error');
 
       $this->redirect('edit/' . $post_data->post_id);
     } else {
       if($this->model->deletePost($post_data->post_id)) {
-        flash('post_message', 'Post Deleted');
+        flash('post_message', 'Post Deleted', 'flash');
 
         $this->redirect('index');
       } else {
-        error('delete_error', 'Unable to delete post');
+        flash('delete_error', 'Unable to delete post', 'error');
 
         $this->redirect('edit/' . $post_data->post_id);
       }
@@ -673,11 +647,11 @@ class Controller {
     } else if(!$post_data = $this->model->getPost($post)) {
       $this->redirect('index');
     } else if(!check($_POST['token'], 'token')) {
-      error('form_error', 'Token Failure');
+      flash('form_error', 'Token Failure', 'error');
 
       $this->redirect('post/' . $post_data->post_id);
     } else if(empty($_POST['comment_text'])) {
-      error('form_error', 'Enter a comment');
+      flash('form_error', 'Enter a comment', 'error');
 
       $this->redirect('post/'. $post_data->post_id);
     } else {
@@ -690,7 +664,7 @@ class Controller {
       if($this->model->createComment($comment)) {
         $this->redirect('post/'. $post_data->post_id);
       } else {
-        error('form_error', 'Unable to post comment');
+        flash('form_error', 'Unable to post comment', 'error');
 
         $this->redirect('post/'. $post_data->post_id);
       }
@@ -708,18 +682,18 @@ class Controller {
       $this->redirect('index');
     } else {
       if($this->model->deleteComment($comment_data->comment_id)) {
-        flash('post_message', 'Comment Deleted');
+        flash('post_message', 'Comment Deleted', 'flash');
 
         $this->redirect('post/' . $comment_data->comment_post);
       } else {
-        error('post_message', 'Unable to delete post');
+        flash('post_message', 'Unable to delete post', 'error');
 
         $this->redirect('post/' . $comment_data->post_id);
       }
     }
   }
 
-  private function all() {
+  private function top() {
     $user = $this->model->checkUser();
 
     $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
@@ -730,7 +704,7 @@ class Controller {
 
     $start = ($p > 1) ? ($p * $limit) - $limit : 0;
 
-    $posts = $this->model->getPosts($start, $limit);
+    $posts = $this->model->getTopPosts($start, $limit);
 
     $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
 
@@ -738,6 +712,28 @@ class Controller {
 
     $page_title = "All Posts";
 
-    $this->loadPage('all', array('user' => $user, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'page_title' => $page_title));
+    $this->loadPage('top', array('user' => $user, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'page_title' => $page_title));
+  }
+
+  private function new() {
+    $user = $this->model->checkUser();
+
+    $categories = $user ? $this->model->getUsersFollows($user->user_id) : null;
+
+    $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+
+    $limit = 25;
+
+    $start = ($p > 1) ? ($p * $limit) - $limit : 0;
+
+    $posts = $this->model->getNewPosts($start, $limit);
+
+    $total = $this->model->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
+
+    $pages = ceil($total / $limit);
+
+    $page_title = "All Posts";
+
+    $this->loadPage('new', array('user' => $user, 'categories' => $categories, 'p' => $p, 'pages' => $pages, 'posts' => $posts, 'page_title' => $page_title));
   }
 }

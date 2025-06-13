@@ -6,7 +6,7 @@
 
     <form action="<?= base_url('create-post') ?>" method="POST">
       <div class="form-group">
-        <?php error('form_error'); ?>
+        <?php flash('form_error'); ?>
       </div>
       <div class="form-group">
         <select name="post_category">

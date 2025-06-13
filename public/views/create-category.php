@@ -6,7 +6,7 @@
 
     <form action="<?= base_url('new-category') ?>" method="POST">
       <div class="form-group">
-        <?php error('form_error'); ?>
+        <?php flash('form_error'); ?>
       </div>
       <div class="form-group">
         <input type="text" name="category_name" placeholder="Category Name">

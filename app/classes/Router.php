@@ -32,7 +32,8 @@ class Router {
       "unvote" => "unvote",
       "comment" => "comment",
       "delete-comment" => "deleteComment",
-      "all" => "all"
+      "top" => "top",
+      "new" => "new",
     );
   }
 

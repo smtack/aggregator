@@ -90,7 +90,7 @@ a {
   height: 50px;
   padding: 15px;
   color: #ffffff;
-  background-color: #2d55ff;
+  background-color: #ff2d2d;
   border-radius: 5px;
 }
 
@@ -234,6 +234,25 @@ a {
 
 .category-info button {
   width: 90%;
+}
+
+.category-list {
+  padding: 10px 0;
+  text-align: center;
+  border: 1px solid #d3d3d3;
+  border-radius: 5px;
+}
+
+.category-list ul {
+  text-align: left;
+}
+
+.nav-buttons {
+  margin-top: 25px;
+}
+
+.nav-buttons button {
+  margin: 15px 0;
 }
 
 .posts {

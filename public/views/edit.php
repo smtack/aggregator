@@ -8,7 +8,7 @@
 
     <form action="<?= base_url('edit-post') ?>/<?= $post_data->post_id ?>" method="POST">
       <div class="form-group">
-        <?php error('form_error'); ?>
+        <?php flash('form_error'); ?>
       </div>
       <div class="form-group">
         <select name="post_category">
@@ -38,7 +38,7 @@
 
     <form action="<?= base_url('delete-post') ?>/<?= $post_data->post_id ?>" method="POST">
       <div class="form-group">
-        <?php error('delete_error'); ?>
+        <?php flash('delete_error'); ?>
       </div>
       <div class="form-group">
         <input type="hidden" name="delete-token" value="<?= generate('delete-token') ?>">

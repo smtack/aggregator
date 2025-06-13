@@ -152,7 +152,7 @@ class Model {
 
   public function createCategory($category) {
     if($this->db->insert('categories', $category)) {
-      return true;
+      return $this->db->pdo->lastInsertId();
     }
 
     return false;
@@ -228,6 +228,10 @@ class Model {
     return false;
   }
 
+  public function userFollows($user, $category) {
+    return $this->db->exists('follows', array('follow_user' => $user, 'follow_category' => $category));
+  }
+
   public function getFollowData($category) {
     $sql = "SELECT * FROM follows WHERE follow_category = :category";
 
@@ -278,10 +282,13 @@ class Model {
     return false;
   }
 
-  public function getPosts($start, $limit) {
+  public function getTopPosts($start, $limit) {
     $sql = "SELECT
               SQL_CALC_FOUND_ROWS
-              *
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
             FROM
               posts
             LEFT JOIN
@@ -291,10 +298,52 @@ class Model {
             LEFT JOIN
               categories
             ON
-              category_id = posts.post_category
+              categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
+            GROUP BY
+              posts.post_id
             ORDER BY
-              post_date
-            DESC
+              pts DESC
+            LIMIT
+              {$start}, {$limit}";
+
+    $stmt = $this->db->pdo->prepare($sql);
+
+    if($stmt->execute()) {
+      return $stmt->fetchAll();
+    }
+
+    return false;
+  }
+
+  public function getNewPosts($start, $limit) {
+    $sql = "SELECT
+              SQL_CALC_FOUND_ROWS
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
+            FROM
+              posts
+            LEFT JOIN
+              users
+            ON
+              users.user_id = posts.post_by
+            LEFT JOIN
+              categories
+            ON
+              categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
+            GROUP BY
+              posts.post_id
+            ORDER BY
+              posts.post_date DESC
             LIMIT
               {$start}, {$limit}";
 
@@ -310,7 +359,10 @@ class Model {
   public function getHomepagePosts($user, $start, $limit) {
     $sql = "SELECT
               SQL_CALC_FOUND_ROWS
-              *
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
             FROM
               posts
             LEFT JOIN
@@ -320,7 +372,11 @@ class Model {
             LEFT JOIN
               categories
             ON
-              category_id = posts.post_category
+              categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
             WHERE
               posts.post_category = categories.category_id AND post_category
             IN
@@ -330,9 +386,10 @@ class Model {
                 follows
               WHERE
                 follow_user = :user)
+            GROUP BY
+              posts.post_id
             ORDER BY
-              post_date
-            DESC
+              pts DESC
             LIMIT
               {$start}, {$limit}";
 
@@ -348,18 +405,25 @@ class Model {
   public function getPostsByCategory($id, $start, $limit) {
     $sql = "SELECT
               SQL_CALC_FOUND_ROWS
-              *
+              posts.*,
+              users.*,
+              COUNT(points.point_post) AS pts
             FROM
               posts
             LEFT JOIN
               users
             ON
               users.user_id = posts.post_by
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
             WHERE
               post_category = :category_id
+            GROUP BY
+              posts.post_id
             ORDER BY
-              post_date
-            DESC
+              pts DESC
             LIMIT
               {$start}, {$limit}";
 
@@ -375,7 +439,10 @@ class Model {
   public function getUsersPosts($user, $start, $limit) {
     $sql = "SELECT
               SQL_CALC_FOUND_ROWS
-              *
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
             FROM
               posts
             LEFT JOIN
@@ -385,12 +452,17 @@ class Model {
             LEFT JOIN
               categories
             ON
-              category_id = posts.post_category
+              categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
             WHERE
               post_by = :post_by
+            GROUP BY
+              posts.post_id
             ORDER BY
-              post_date
-            DESC
+              pts DESC
             LIMIT
               {$start}, {$limit}";
 
@@ -403,9 +475,12 @@ class Model {
     return false;
   }
 
-  public function getPost($id) {
+  public function searchPosts($keywords) {
     $sql = "SELECT
-              *
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
             FROM
               posts
             LEFT JOIN
@@ -416,8 +491,56 @@ class Model {
               categories
             ON
               categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
             WHERE
-              post_id = :post_id";
+              post_title
+            LIKE
+              \"%" . $keywords . "%\"
+            OR
+              post_text
+            LIKE
+              \"%" . $keywords . "%\"
+            GROUP BY
+              posts.post_id
+            ORDER BY
+              pts DESC";
+
+    $stmt = $this->db->pdo->prepare($sql);
+
+    if($stmt->execute()) {
+      return $stmt->fetchAll();
+    }
+
+    return false;
+  }
+
+  public function getPost($id) {
+    $sql = "SELECT
+              posts.*,
+              users.*,
+              categories.*,
+              COUNT(points.point_post) AS pts
+            FROM
+              posts
+            LEFT JOIN
+              users
+            ON
+              users.user_id = posts.post_by
+            LEFT JOIN
+              categories
+            ON
+              categories.category_id = posts.post_category
+            LEFT JOIN
+              points
+            ON
+              points.point_post = posts.post_id
+            WHERE
+              post_id = :post_id
+            GROUP BY
+              posts.post_id";
 
     $stmt = $this->db->pdo->prepare($sql);
 
@@ -459,17 +582,9 @@ class Model {
 
     return false;
   }
-
-  public function getPoints($post) {
-    $sql = "SELECT * FROM points WHERE point_post = :post";
-
-    $stmt = $this->db->pdo->prepare($sql);
-
-    if($stmt->execute([':post' => $post])) {
-      return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    return false;
+  
+  public function hasVoted($user, $post) {
+    return $this->db->exists('points', array('point_user' => $user, 'point_post' => $post));
   }
 
   public function createComment($comment) {
@@ -528,40 +643,6 @@ class Model {
   public function deleteComment($comment) {
     if($this->db->delete('comments', array('comment_id' => $comment))) {
       return true;
-    }
-
-    return false;
-  }
-
-  public function searchPosts($keywords) {
-    $sql = "SELECT
-              *
-            FROM
-              posts
-            LEFT JOIN
-              users
-            ON
-              users.user_id = posts.post_by
-            LEFT JOIN
-              categories
-            ON
-              category_id = posts.post_category
-            WHERE
-              post_title
-            LIKE
-              \"%" . $keywords . "%\"
-            OR
-              post_text
-            LIKE
-              \"%" . $keywords . "%\"
-            ORDER BY
-              post_date
-            DESC";
-
-    $stmt = $this->db->pdo->prepare($sql);
-
-    if($stmt->execute()) {
-      return $stmt->fetchAll();
     }
 
     return false;

@@ -1,20 +1,28 @@
 <?php
-require_once "../app/config.php";
 
-spl_autoload_register(function($class) {
-  require_once "../app/classes/" . $class . ".php";
-});
+use Core\Router;
+use Core\Session;
 
-include_once "../app/functions.php";
+const BASE_PATH = __DIR__ . '/../';
 
-// Error Reporting
-ini_set('display_errors', 'on');
-ini_set('display_startup_errors', 'on');
-ini_set('log_errors', 'on');
+require BASE_PATH . '/vendor/autoload.php';
+require BASE_PATH . '/config/config.php';
+require BASE_PATH . '/src/functions.php';
 
 error_reporting(E_ALL);
-// set_error_handler('errorHandler');
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('log_errors', 1);
 
-session_start();
+$routes = require base_path('src/routes.php');
 
-$app = new Controller();
+$router = new Router($routes);
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$uri = trim($uri);
+
+$router->route($uri);
+
+$session = new Session();
+
+$session->unflash();

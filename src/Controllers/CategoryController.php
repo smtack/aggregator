@@ -33,9 +33,12 @@ class CategoryController extends Controller
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
+        $token = $this->hash->generate('token');
+
         $this->loadPage('create-category', [
             'user' => $user,
             'categories' => $categories,
+            'token'=> $token,
             'page_title' => "Create Category",
         ]);
     }

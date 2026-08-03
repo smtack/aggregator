@@ -18,7 +18,7 @@ class Router
                 $route
             );
 
-            $pattern = '#^' . $pattern . '$#';
+            $pattern = "#^{$pattern}$#";
 
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches);

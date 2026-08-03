@@ -28,8 +28,10 @@ class UserController extends Controller
             $this->redirect('/');
         }
 
+        $token = $this->hash->generate('token');
+
         $this->loadPage('signup', [
-            'token' => $this->hash->generate('token'),
+            'token' => $token,
             'page_title' => "Sign Up",
         ]);
     }
@@ -87,8 +89,11 @@ class UserController extends Controller
         if($this->userModel->checkUser()) {
             $this->redirect('/');
         }
+
+        $token = $this->hash->generate('token');
         
         $this->loadPage('login', [
+            'token' => $token,
             'page_title' => "Log In",
         ]);
     }
@@ -139,9 +144,16 @@ class UserController extends Controller
             $this->redirect('/');
         }
 
+        $token = $this->hash->generate('token');
+        $passwordToken = $this->hash->generate('password-token');
+        $deleteToken = $this->hash->generate('delete-token');
+
         $this->loadPage('update', [
             'user' => $user,
             'categories' => $this->userModel->getUsersFollows($user->user_id),
+            'token' => $token,
+            'password_token' => $passwordToken,
+            'delete_token' => $deleteToken,
             'page_title' => "Update Profile",
         ]);
     }

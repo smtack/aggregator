@@ -33,9 +33,12 @@ class PostController extends Controller
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
+        $token = $this->hash->generate('token');
+
         $this->loadPage('new-post', [
             'user' => $user,
             'categories' => $categories,
+            'token' => $token,
             'page_title' => "New Post",
         ]);
     }
@@ -91,12 +94,15 @@ class PostController extends Controller
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
+        $token = $this->hash->generate('token');
+
         $comments = $this->commentModel->getComments($id);
 
         $this->loadPage('post', [
             'user' => $user,
             'post_data' => $post_data,
             'categories' => $categories,
+            'token' => $token,
             'comments' => $comments,
             'page_title' => $post_data->post_title,
         ]);
@@ -121,11 +127,16 @@ class PostController extends Controller
         }
 
         $categories = $this->userModel->getUsersFollows($user->user_id);
-  
+
+        $token = $this->hash->generate('token');
+        $deleteToken = $this->hash->generate('delete-token');
+
         $this->loadPage('edit', [
             'user' => $user,
             'post_data' => $post_data,
             'categories' => $categories,
+            'token' => $token,
+            'delete_token' => $deleteToken,
             'page_title' => "Edit Post",
         ]);
     }

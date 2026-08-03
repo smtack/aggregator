@@ -1,6 +1,6 @@
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="<?= asset('img/favicon/favicon-32x32.png') ?>">
     <link rel="icon" type="image/png" sizes="16x16" href="<?= asset('img/favicon/favicon-16x16.png') ?>">
     <link rel="manifest" href="<?= asset('img/favicon/site.webmanifest') ?>">
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 
     <script src="<?= asset('js/main.js') ?>" defer></script>
 
-    <title><?= isset($page_title) ? 'aggregator - ' . $page_title : 'aggregator' ?></title>
-  </head>
-  <body>
+    <title><?= isset($page_title) ? "aggregator - {$page_title}" : "aggregator" ?></title>
+</head>
+<body>
     <div class="container">

@@ -41,3 +41,15 @@ function view(string $view) {
 function asset(string $path): string {
     return "/assets/" . ltrim($path, '/');
 }
+
+// Format date
+
+function format_date(string $date, string $format = 'l j F Y H:i'): string {
+    return escape(date($format, strtotime($date)));
+}
+
+// Get current year
+
+function get_year() {
+    return date('Y');
+}

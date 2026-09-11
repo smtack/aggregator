@@ -74,14 +74,14 @@ class UserController extends Controller
         $user = [
             'user_username' => $username,
             'user_email' => $email,
-            'user_password' => password_hash($password, PASSWORD_DEFAULT)
+            'user_password' => $password
         ];
 
         if(!$this->userModel->createUser($user)) {
             $this->fail('Unable to sign up. Try again later.', 'signup');
         }
         
-        $this->success("Welcome to aggregator {$user['user_username']}", '/');
+        $this->success("Welcome to aggregator {$username}!", '/');
     }
 
     public function login()
@@ -120,7 +120,7 @@ class UserController extends Controller
             'user_password' => $password
         ];
 
-        if (!$this->userModel->login($user)) {
+        if (!$this->userModel->login($user, isset($_POST['remember']))) {
             $this->fail('Username or Password Incorrect', 'login');
         }
 
@@ -131,7 +131,7 @@ class UserController extends Controller
 
     public function logout()
     {
-        $this->userModel->logout($_COOKIE['Auth']);
+        $this->userModel->logout();
 
         $this->redirect('/');
     }

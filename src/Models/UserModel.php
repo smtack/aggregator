@@ -21,8 +21,151 @@ class UserModel extends Model
 
     public function createUser($data)
     {
-        if($this->db->insert('users', $data)) {
-            $this->authorizeUser($data);
+        $user = [
+            'user_username' => $data['user_username'],
+            'user_email' => $data['user_email'],
+            'user_password' => password_hash($data['user_password'], PASSWORD_DEFAULT),
+            'user_joined' => date('Y-m-d H:i:s'),
+        ];
+
+        if($this->db->insert('users', $user)) {
+            $user_id = $this->db->pdo->lastInsertId();
+
+            if ($user_id) {
+                $this->createUserSession($user_id);
+
+                $this->session->put('user_id', $user_id);
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    public function createUserSession($user_id)
+    {
+        $session_token = $this->hash->random(32);
+        $hashed_token = hash('sha256', $session_token);
+
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+        $expires = date('Y-m-d H:i:s', strtotime("+1 days"));
+
+        $sql = "DELETE FROM user_sessions WHERE session_user = :user_id AND expires_at < NOW()";
+
+        $stmt = $this->db->pdo->prepare($sql);
+        $stmt->execute([':user_id' => $user_id]);
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+
+        $session = [
+            'session_user' => $user_id,
+            'session_token' => $hashed_token,
+            'user_agent' => $user_agent,
+            'ip_address' => $ip_address,
+            'expires_at' => $expires
+        ];
+
+        if (!$this->db->insert('user_sessions', $session)) {
+            return false;
+        }
+
+        setcookie('session_token', $session_token, [
+            'expires' => time() + 86400,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        return $session_token;
+    }
+
+    public function validateUserSession()
+    {
+        if (empty($_COOKIE['session_token']) || !preg_match('/\A[a-f0-9]{64}\z/', $_COOKIE['session_token'])) {
+            return false;
+        }
+
+        $session_token = $_COOKIE['session_token'];
+        $hashed_token = hash('sha256', $session_token);
+
+        $sql = "SELECT session_user AS user_id FROM user_sessions WHERE session_token = :session_token AND expires_at > NOW() LIMIT 1";
+
+        $stmt = $this->db->pdo->prepare($sql);
+        $stmt->execute([':session_token' => $hashed_token]);
+
+        $row = $stmt->fetch();
+
+        if (!empty($row)) {
+            return $row->user_id;
+        }
+
+        return false;
+    }
+
+    public function deleteUserSession()
+    {
+        $session_token = $_COOKIE['session_token'] ?? null;
+
+        if (empty($session_token)) {
+            return false;
+        }
+
+        $hashed_token = hash('sha256', $session_token);
+
+        if ($this->db->delete('user_sessions', ['session_token' => $hashed_token])) {
+            setcookie('session_token', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+
+            return true;
+        }
+
+        return false;        
+    }
+
+    public function createRememberToken($user_id)
+    {
+        $selector = $this->hash->random(16);
+        $validator = $this->hash->random(32);
+
+        $hashed_validator = password_hash($validator, PASSWORD_DEFAULT);
+
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+
+        $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+
+        $remember = [
+            'remember_user' => $user_id,
+            'selector' => $selector,
+            'hashed_validator' => $hashed_validator,
+            'user_agent' => $user_agent,
+            'ip_address' => $ip_address,
+            'expires_at' => $expires,
+        ];
+
+        if ($this->db->insert('remember_tokens', $remember)) {
+            $cookie_value = $selector . ':' . $validator;
+
+            setcookie('remember_token', $cookie_value, [
+                'expires' => strtotime($expires),
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
 
             return true;
         }
@@ -30,47 +173,129 @@ class UserModel extends Model
         return false;
     }
 
-    public function authorizeUser($user)
+    public function validateRememberToken()
     {
-        $hash = hash('sha256', $user['user_username']);
-
-        $hash .= $this->hash->random(64);
-
-        if($this->db->insert('user_auth', array('auth_hash' => $hash, 'auth_user' => $user['user_username']))) {
-            setcookie('Auth', $hash);
-
-            return true;
+        if (isset($_SESSION['user_id']) || !empty($this->validateUserSession())) {
+            return false;
         }
 
-        return false;
-    }
+        if (empty($_COOKIE['remember_token'])) {
+            return false;
+        }
 
-    public function userForAuth($hash)
-    {
-        $sql = "SELECT
-                *
-                FROM
-                    users
-                JOIN
-                (SELECT
-                    auth_user
-                FROM
-                    user_auth
-                WHERE
-                    auth_hash = :auth_hash
-                LIMIT 1)
-                AS
-                    UA
-                WHERE
-                    users.user_username = UA.auth_user
-                LIMIT 1";
-    
+        $cookie_value = $_COOKIE['remember_token'];
+        $cookie_parts = explode(':', $cookie_value, 2);
+
+        if (count($cookie_parts) !== 2) {
+            $this->deleteRememberCookie();
+
+            return false;
+        }
+
+        $selector = $cookie_parts[0];
+        $validator = $cookie_parts[1];
+
+        if (!preg_match('/\A[a-f0-9]{32}\z/', $selector) || !preg_match('/\A[a-f0-9]{64}\z/', $validator)) {
+            $this->deleteRememberCookie();
+
+            return false;
+        }
+
+        $sql = "SELECT remember_user AS user_id, hashed_validator FROM remember_tokens WHERE selector = :selector AND expires_at > NOW() LIMIT 1";
+
         $stmt = $this->db->pdo->prepare($sql);
 
-        $stmt->execute([':auth_hash' => $hash]);
+        $stmt->execute([':selector' => $selector]);
 
-        if($stmt->rowCount() > 0) {
-            return $stmt->fetchObject();
+        $row = $stmt->fetch();
+
+        if ($row && password_verify($validator, $row->hashed_validator)) {
+            if (!$this->deleteRememberTokenBySelector($selector)){
+                return false;
+            }
+
+            if (!$this->createRememberToken($row->user_id)) {
+                return false;
+            }
+
+            if (!$this->createUserSession($row->user_id)) {
+                return false;
+            }
+
+            return $row->user_id;
+        } else {
+            $this->deleteRememberCookie();
+        }
+
+        return false;
+    }
+
+    public function deleteRememberTokenBySelector($selector)
+    {
+        if ($this->db->delete('remember_tokens', ['selector' => $selector])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function deleteRememberToken()
+    {
+        $user_id = $this->getLoggedInUserId();
+
+        if ($user_id !== false) {
+            $this->db->delete('remember_tokens', ['remember_user' => $user_id]);
+        }
+
+        $this->deleteRememberCookie();
+    }
+
+    private function deleteRememberCookie()
+    {
+        setcookie('remember_token', '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    public function login($user, $remember = false)
+    {
+        $stmt = $this->db->select('users', array('user_username' => $user['user_username']));
+
+        $row = $stmt->fetch();
+
+        if(!$row || !password_verify($user['user_password'], $row->user_password)) {
+            return false;
+        }
+
+        $this->createUserSession($row->user_id);
+
+        $this->session->put('user_id', $row->user_id);
+        
+        if ($remember) {
+            $this->createRememberToken($row->user_id);
+        }
+
+        return true;
+    }
+
+    public function getLoggedInUserId()
+    {
+        if (isset($_SESSION['user_id'])) {
+            return $_SESSION['user_id'];
+        }
+
+        if ($user_id = $this->validateUserSession()) {
+            return $user_id;
+        }
+
+        $this->validateRememberToken();
+
+        if ($user_id = $this->validateUserSession()) {
+            return $user_id;
         }
 
         return false;
@@ -78,39 +303,24 @@ class UserModel extends Model
 
     public function checkUser()
     {
-        if(isset($_COOKIE['Auth'])) {
-            return $this->userForAuth($_COOKIE['Auth']);
+        $user_id = $this->getLoggedInUserId();
+
+        if ($user_id === false) {
+            return false;
         }
 
-        return false;
+        $stmt = $this->db->select('users', array('user_id' => $user_id));
+
+        return $stmt->fetch();
     }
 
-    public function login($user)
+    public function logout()
     {
-        if($this->db->exists('users', array('user_username' => $user['user_username']))) {
-            $stmt = $this->db->select('users', array('user_username' => $user['user_username']));
+        $this->deleteRememberToken();
 
-            $row = $stmt->fetch();
-
-            if(password_verify($user['user_password'], $row->user_password)) {
-                $this->authorizeUser($user);
-
-                return $row;
-            }
-        }
-
-        return false;
-    }
-
-    public function logout($hash)
-    {
-        $this->db->delete('user_auth', array('auth_hash' => $hash));
-
-        setcookie('Auth', '', time() - 3600);
-
+        $this->deleteUserSession();
+        
         $this->session->destroy();
-
-        return;
     }
 
     public function updateProfile($data, $id)
@@ -190,7 +400,7 @@ class UserModel extends Model
         $stmt = $this->db->pdo->prepare($sql);
 
         if($stmt->execute([':user' => $user])) {
-        return $stmt->fetchAll();
+            return $stmt->fetchAll();
         }
 
         return false;

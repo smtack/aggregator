@@ -86,6 +86,13 @@ a {
     border-radius: 50px;
 }
 
+.form-group input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin-right: 10px;
+    position: relative;
+}
+
 .error {
     height: 50px;
     padding: 15px;

@@ -18,6 +18,12 @@
             <input type="password" name="user_password" placeholder="Password">
         </div>
         <div class="form-group">
+            <input type="checkbox" name="remember" value="1" id="remember">
+            <label for="remember">
+                Remember Me
+            </label>
+        </div>
+        <div class="form-group">
             <input type="hidden" name="token" value="<?= $token ?>">
             <input type="submit" name="login" value="Log In">
         </div>

@@ -28,18 +28,18 @@ class UserModel extends Model
             'user_joined' => date('Y-m-d H:i:s'),
         ];
 
-        if($this->db->insert('users', $user)) {
+        $query = $this->db->insert('users', $user);
+
+        if ($query) {
             $user_id = $this->db->pdo->lastInsertId();
 
-            if ($user_id) {
-                $this->createUserSession($user_id);
-
-                $this->session->put('user_id', $user_id);
-
-                return true;
-            } else {
+            if (!$this->createUserSession($user_id)) {
                 return false;
             }
+
+            $this->session->put('user_id', $user_id);
+
+            return true;
         }
 
         return false;
@@ -55,10 +55,11 @@ class UserModel extends Model
 
         $expires = date('Y-m-d H:i:s', strtotime("+1 days"));
 
-        $sql = "DELETE FROM user_sessions WHERE session_user = :user_id AND expires_at < NOW()";
-
-        $stmt = $this->db->pdo->prepare($sql);
-        $stmt->execute([':user_id' => $user_id]);
+        $this->db->query(
+            "DELETE FROM user_sessions 
+            WHERE session_user = :user_id AND expires_at < NOW()",
+            [':user_id' => $user_id]
+        );
 
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
@@ -96,12 +97,15 @@ class UserModel extends Model
         $session_token = $_COOKIE['session_token'];
         $hashed_token = hash('sha256', $session_token);
 
-        $sql = "SELECT session_user AS user_id FROM user_sessions WHERE session_token = :session_token AND expires_at > NOW() LIMIT 1";
+        $query = $this->db->query(
+            "SELECT session_user AS user_id 
+            FROM user_sessions
+            WHERE session_token = :session_token AND expires_at > NOW()
+            LIMIT 1",
+            [':session_token' => $hashed_token]
+        );
 
-        $stmt = $this->db->pdo->prepare($sql);
-        $stmt->execute([':session_token' => $hashed_token]);
-
-        $row = $stmt->fetch();
+        $row = $query->fetch();
 
         if (!empty($row)) {
             return $row->user_id;
@@ -201,13 +205,15 @@ class UserModel extends Model
             return false;
         }
 
-        $sql = "SELECT remember_user AS user_id, hashed_validator FROM remember_tokens WHERE selector = :selector AND expires_at > NOW() LIMIT 1";
+        $query = $this->db->query(
+            "SELECT remember_user AS user_id, hashed_validator
+            FROM remember_tokens
+            WHERE selector = :selector AND expires_at > NOW()
+            LIMIT 1",
+            [':selector' => $selector]
+        );
 
-        $stmt = $this->db->pdo->prepare($sql);
-
-        $stmt->execute([':selector' => $selector]);
-
-        $row = $stmt->fetch();
+        $row = $query->fetch();
 
         if ($row && password_verify($validator, $row->hashed_validator)) {
             if (!$this->deleteRememberTokenBySelector($selector)){
@@ -232,11 +238,7 @@ class UserModel extends Model
 
     public function deleteRememberTokenBySelector($selector)
     {
-        if ($this->db->delete('remember_tokens', ['selector' => $selector])) {
-            return true;
-        }
-
-        return false;
+        return $this->db->delete('remember_tokens', ['selector' => $selector]);
     }
 
     public function deleteRememberToken()
@@ -271,7 +273,9 @@ class UserModel extends Model
             return false;
         }
 
-        $this->createUserSession($row->user_id);
+        if (!$this->createUserSession($row->user_id)) {
+            return false;
+        }
 
         $this->session->put('user_id', $row->user_id);
         
@@ -319,35 +323,23 @@ class UserModel extends Model
         $this->deleteRememberToken();
 
         $this->deleteUserSession();
-        
+
         $this->session->destroy();
     }
 
     public function updateProfile($data, $id)
     {
-        if($this->db->update('users', $data, array('user_id' => $id))) {
-            return true;
-        }
-
-        return false;
+        return $this->db->update('users', $data, array('user_id' => $id));
     }
 
     public function changePassword($password, $id)
     {
-        if($this->db->update('users', $password, array('user_id' => $id))) {
-            return true;
-        }
-
-        return false;
+        return $this->db->update('users', $password, array('user_id' => $id));
     }
 
     public function deleteProfile($user)
     {
-        if($this->db->delete('users', array('user_id' => $user))) {
-            return true;
-        }
-
-        return false;
+        return $this->db->delete('users', array('user_id' => $user));
     }
 
     public function getProfile($profile)
@@ -363,47 +355,29 @@ class UserModel extends Model
 
     public function searchUsers($keywords)
     {
-        $sql = "SELECT
-                    *
-                FROM
-                    users
-                WHERE
-                    user_username
-                LIKE
-                    \"%" . $keywords . "%\"
-                ORDER BY
-                    user_joined
-                DESC";
+        $query = $this->db->query(
+            "SELECT *
+            FROM users
+            WHERE user_username
+            LIKE \"%" . $keywords . "%\"
+            ORDER BY user_joined DESC"
+        );
 
-        $stmt = $this->db->pdo->prepare($sql);
-
-        if($stmt->execute()) {
-            return $stmt->fetchAll();
-        }
-
-        return false;
+        return $query->fetchAll();
     }
 
     public function getUsersFollows($user)
     {
-        $sql = "SELECT
-                    *
-                FROM
-                    categories
-                LEFT JOIN
-                    follows
-                ON
-                    categories.category_id = follows.follow_category
-                WHERE
-                    follows.follow_user = :user";
-    
-        $stmt = $this->db->pdo->prepare($sql);
+        $query = $this->db->query(
+            "SELECT *
+            FROM categories
+            LEFT JOIN follows
+                ON categories.category_id = follows.follow_category
+            WHERE follows.follow_user = :user",
+            [':user' => $user]
+        );
 
-        if($stmt->execute([':user' => $user])) {
-            return $stmt->fetchAll();
-        }
-
-        return false;
+        return $query->fetchAll();
     }
 
     public function userFollows($user, $category)
@@ -413,14 +387,13 @@ class UserModel extends Model
 
     public function getFollowData($category)
     {
-        $sql = "SELECT * FROM follows WHERE follow_category = :category";
+        $query = $this->db->query(
+            "SELECT *
+            FROM follows
+            WHERE follow_category = :category",
+            [':category' => $category]
+        );
 
-        $stmt = $this->db->pdo->prepare($sql);
-
-        if($stmt->execute([':category' => $category])) {
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        }
-
-        return false;
+        return $query->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

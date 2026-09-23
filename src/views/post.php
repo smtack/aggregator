@@ -7,7 +7,7 @@
 <div class="posts">
     <div class="post">
         <span class="vote">
-            <?php if(isset($user)): ?>
+            <?php if(isset($user) && !empty($user)): ?>
                 <?php if(!$this->postModel->hasVoted($user->user_id, $post_data->post_id)): ?>
                     <a href="<?= base_url('/vote') ?>/<?= $post_data->post_id ?>"><img src="<?= asset('img/icons/vote.svg') ?>" alt="Vote"></a>
                 <?php else: ?>

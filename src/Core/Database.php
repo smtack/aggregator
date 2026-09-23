@@ -172,6 +172,27 @@ class Database
         }
     }
 
+    public function query($sql, $params = [])
+    {
+        try {
+            $stmt = $this->pdo->prepare($sql);
+
+            $stmt->execute($params);
+
+            return $stmt;
+        } catch(\PDOException $e) {
+            error_log(
+                sprintf(
+                    'Database Error: %s (Code: %d)',
+                    $e->getMessage(),
+                    $e->getCode()
+                )
+            );
+
+            throw new \Exception("An error occurred", 0, $e);
+        }
+    }
+
     public function exists($table, $array)
     {
         $res = $this->select($table, $array);

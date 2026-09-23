@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Core\Controller;
 use Core\Hash;
+use Core\Pagination;
 use Models\PostModel;
 use Models\UserModel;
 
@@ -269,27 +270,20 @@ class UserController extends Controller
             $this->abort(404);
         }
 
-        $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-
-        $limit = 25;
-
-        $start = ($p > 1) ? ($p * $limit) - $limit : 0;
-
-        $posts = $postModel->getUsersPosts($profile_data->user_id, $start, $limit);
-
-        $total = $postModel->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
-
-        $pages = ceil($total / $limit);
-
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
+
+        $pagination = new Pagination($_GET['p'] ?? 1, 25);
+
+        $posts = $postModel->getUsersPosts($profile_data->user_id, $pagination->offset(), $pagination->limit());
+
+        $pagination->setTotal($posts['total']);
 
         $this->loadPage('profile', [
             'user' => $user,
-            'profile_data' => $profile_data,
             'categories' => $categories,
-            'p' => $p,
-            'pages' => $pages,
-            'posts' => $posts,
+            'profile_data' => $profile_data,
+            'posts' => $posts['posts'],
+            'pagination' => $pagination,
             'page_title' => $profile_data->user_username . "'s Profile",
         ]);
     }

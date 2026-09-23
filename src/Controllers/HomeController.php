@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Core\Controller;
+use Core\Pagination;
 use Models\CategoryModel;
 use Models\UserModel;
 use Models\PostModel;
@@ -24,30 +25,25 @@ class HomeController extends Controller
 
     public function index()
     {
-        $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-
-        $limit = 25;
-
-        $start = ($p > 1) ? ($p * $limit) - $limit : 0;
-
-        if($user = $this->userModel->checkUser()) {
-            $posts = $this->postModel->getHomepagePosts($user->user_id, $start, $limit);
-        } else {
-            $posts = $this->postModel->getTopPosts($start, $limit);
-        }
-
-        $total = $this->userModel->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
-
-        $pages = ceil($total / $limit);
+        $user = $this->userModel->checkUser();
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
+        $pagination = new Pagination($_GET['p'] ?? 1, 25);
+
+        if ($user) {
+            $posts = $this->postModel->getHomepagePosts($user->user_id, $pagination->offset(), $pagination->limit());
+        } else {
+            $posts = $this->postModel->getTopPosts($pagination->offset(), $pagination->limit());
+        }
+
+        $pagination->setTotal($posts['total']);
+
         $this->loadPage('index', [
             'user' => $user,
-            'p' => $p,
-            'pages' => $pages,
-            'posts' => $posts,
             'categories' => $categories,
+            'posts' => $posts['posts'],
+            'pagination' => $pagination,
         ]);
     }
 

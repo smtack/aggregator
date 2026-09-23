@@ -15,29 +15,26 @@ class CategoryModel extends Model
         return false;
     }
 
-    public function getCategories($start, $limit)
+    public function getCategories(int $offset, int $limit)
     {
-        $sql = "SELECT
-                    SQL_CALC_FOUND_ROWS
-                *
-                FROM
-                    categories
-                LEFT JOIN
-                    users
-                ON
-                    users.user_id = categories.category_by
-                ORDER BY
-                    category_created
-                DESC
-                LIMIT {$start}, {$limit}";
+        $query = $this->db->query(
+            "SELECT *
+            FROM categories
+            LEFT JOIN users
+                ON users.user_id = categories.category_by
+            ORDER BY
+                category_created DESC
+            LIMIT {$offset}, {$limit}"
+        );
     
-        $stmt = $this->db->pdo->prepare($sql);
+        $categories = $query->fetchAll();
 
-        if($stmt->execute()) {
-            return $stmt->fetchAll();
-        }
+        $total = $this->db->query("SELECT COUNT(*) FROM categories")->fetchColumn();
 
-        return false;
+        return [
+            'categories' => $categories,
+            'total' => $total,
+        ];
     }
 
     public function getCategory($id)
@@ -51,50 +48,26 @@ class CategoryModel extends Model
 
     public function followCategory($user, $category)
     {
-        if($this->db->insert('follows', array('follow_user' => $user, 'follow_category' => $category))) {
-            return true;
-        }
-
-        return false;
+        return $this->db->insert('follows', array('follow_user' => $user, 'follow_category' => $category));
     }
 
     public function unfollowCategory($user, $category)
     {
-        if($this->db->delete('follows', array('follow_user' => $user, 'follow_category' => $category))) {
-            return true;
-        }
-
-        return false;
+        return $this->db->delete('follows', array('follow_user' => $user, 'follow_category' => $category));
     }
 
     public function searchCategories($keywords)
     {
-        $sql = "SELECT
-                    *
-                FROM
-                    categories
-                LEFT JOIN
-                    users
-                ON
-                    users.user_id = categories.category_by
-                WHERE
-                    category_name
-                LIKE
-                    \"%" . $keywords . "%\"
-                OR
-                    category_description
-                LIKE
-                    \"%" . $keywords . "%\"
-                ORDER BY
-                    category_created
-                DESC";
+        $query = $this->db->query(
+            "SELECT *
+            FROM categories
+            LEFT JOIN users
+                ON users.user_id = categories.category_by
+            WHERE category_name LIKE \"%" . $keywords . "%\"
+            OR category_description LIKE \"%" . $keywords . "%\"
+            ORDER BY category_created DESC"
+        );
 
-        $stmt = $this->db->pdo->prepare($sql);
-
-        if($stmt->execute()) {
-            return $stmt->fetchAll();
-        }
-
-        return false;
+        return $query->fetchAll();
     }
 }

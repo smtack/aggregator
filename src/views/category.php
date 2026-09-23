@@ -53,12 +53,12 @@
     <?php endif; ?>
 
     <div class="pagination">
-        <?php if($p > 1): ?>
-            <a id="prev" href="?p=<?php echo $p - 1 ?>">&#129168; Previous</a>
+        <?php if ($pagination->hasPrevious()): ?>
+            <a id="prev" href="?p=<?= $pagination->previous() ?>">&#129168; Previous</a>
         <?php endif; ?>
-
-        <?php if($p < $pages): ?>
-            <a id="next" href="?p=<?php echo $p + 1 ?>">Next &#129170;</a>
+        
+        <?php if ($pagination->hasNext()): ?>
+            <a id="next" href="?p=<?= $pagination->next() ?>">Next &#129170;</a>
         <?php endif; ?>
     </div>
 </div>

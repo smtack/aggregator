@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Core\Controller;
 use Core\Hash;
+use Core\Pagination;
 use Models\PostModel;
 use Models\UserModel;
 use Models\CommentModel;
@@ -256,24 +257,17 @@ class PostController extends Controller
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
-        $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $pagination = new Pagination($_GET['p'] ?? 1, 25);
 
-        $limit = 25;
+        $posts = $this->postModel->getTopPosts($pagination->offset(), $pagination->limit());
 
-        $start = ($p > 1) ? ($p * $limit) - $limit : 0;
-
-        $posts = $this->postModel->getTopPosts($start, $limit);
-
-        $total = $this->postModel->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
-
-        $pages = ceil($total / $limit);
+        $pagination->setTotal($posts['total']);
 
         $this->loadPage('top', [
             'user' => $user,
             'categories' => $categories,
-            'p' => $p,
-            'pages' => $pages,
-            'posts' => $posts,
+            'posts' => $posts['posts'],
+            'pagination' => $pagination,
             'page_title' => "Top Posts",
         ]);
     }
@@ -284,24 +278,17 @@ class PostController extends Controller
 
         $categories = $user ? $this->userModel->getUsersFollows($user->user_id) : null;
 
-        $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $pagination = new Pagination($_GET['p'] ?? 1, 25);
 
-        $limit = 25;
+        $posts = $this->postModel->getNewPosts($pagination->offset(), $pagination->limit());
 
-        $start = ($p > 1) ? ($p * $limit) - $limit : 0;
-
-        $posts = $this->postModel->getNewPosts($start, $limit);
-
-        $total = $this->postModel->db->pdo->query("SELECT FOUND_ROWS() AS total")->fetch()->total;
-
-        $pages = ceil($total / $limit);
+        $pagination->setTotal($posts['total']);
 
         $this->loadPage('new', [
             'user' => $user,
             'categories' => $categories,
-            'p' => $p,
-            'pages' => $pages,
-            'posts' => $posts,
+            'posts' => $posts['posts'],
+            'pagination' => $pagination,
             'page_title' => "New Posts",
         ]);
     }
